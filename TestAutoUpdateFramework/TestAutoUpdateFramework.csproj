@@ -12,6 +12,5 @@
     </PropertyGroup>
     <ItemGroup>
       <PackageReference Include="sqlite-net-pcl" Version="1.11.285" />
-        <ProjectReference Include="../UDFSourceGenerator/UDFSourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true"/>
-    </ItemGroup>
+         </ItemGroup>
 </Project>
