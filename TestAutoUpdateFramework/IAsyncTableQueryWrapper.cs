@@ -1,7 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Linq.Expressions;
 
-namespace SimpleDatabaseApp.Repos;
+namespace TestAutoUpdateFramework;
 
 public interface IAsyncTableQueryWrapper<T> where T : new()
 {
