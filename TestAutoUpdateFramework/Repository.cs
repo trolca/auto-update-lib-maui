@@ -1,16 +1,9 @@
-﻿using Java.Util;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
+﻿using System.Collections.ObjectModel;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
-using Android.Text.Style;
+using System.Reflection;
 using SQLite;
 
-namespace SimpleDatabaseApp.Repos
+namespace TestAutoUpdateFramework
 {
     public class Repository<T> : IDisposable where T : new()
     {
@@ -64,16 +57,18 @@ namespace SimpleDatabaseApp.Repos
 
             public IAsyncTableQueryWrapper<T> Skip(int n)
             {
-                _innerQuery = _innerQuery.Skip(n);
-                _offset = n;
-                return this;
+                throw new NotSupportedException();
+                // _innerQuery = _innerQuery.Skip(n);
+                // _offset = n;
+                // return this;
             }
 
             public IAsyncTableQueryWrapper<T> Take(int n)
             {
-                _innerQuery = _innerQuery.Take(n);
-                _queryExpressionsHolder.Limit = n;
-                return this;
+                throw new NotSupportedException();
+                // _innerQuery = _innerQuery.Take(n);
+                // _queryExpressionsHolder.Limit = n;
+                // return this;
             }
 
             public IAsyncTableQueryWrapper<T> OrderBy<U>(Expression<Func<T, U>> orderExpr)
@@ -191,15 +186,15 @@ namespace SimpleDatabaseApp.Repos
                     HandleOrderingFor(list, holder);
                 //[1,2,3,4,5,6,7,8,9,10]
                 //[1,2,2,3,4,5,6,7,8,9,10]
-                if (beenOrdered && holder.Offset != null)
-                {
-                    if (list[0].Equals(entity))
-                    {
-                        list.RemoveAt(0);
-                        var newEntity = await _connection.Table<T>().Skip(holder.Offset.Offset).Take(1).FirstAsync();
-                        list.Insert(0, newEntity);
-                    }
-                }
+                // if (beenOrdered && holder.Offset != null)
+                // {
+                //     if (list[0].Equals(entity))
+                //     {
+                //         list.RemoveAt(0);
+                //         var newEntity = await _connection.Table<T>().Skip(holder.Offset.Offset).Take(1).FirstAsync();
+                //         list.Insert(0, newEntity);
+                //     }
+                // }
                 
                 
             }
@@ -231,7 +226,14 @@ namespace SimpleDatabaseApp.Repos
             {
                 if (!CheckWhereExpressions(entry.Value.WhereExpressions, entity))
                 {
-                    entry.Key.Remove(entity);
+                    for (int i = 0; i < entry.Key.Count; i++)
+                    {
+                        if (entry.Key[i].Equals(entity))
+                        {
+                            entry.Key.RemoveAt(i);
+                            break;
+                        }
+                    }
                     continue;
                 }
                 
@@ -245,13 +247,10 @@ namespace SimpleDatabaseApp.Repos
                     {
                         if (entry.Key[i].Equals(entity))
                         {
-                            entry.Key.Insert(i + 1, entity);
-                            new Task(() =>
+                            foreach (var property in entry.Key[i].GetType().GetProperties())
                             {
-                                Thread.Sleep(10);
-                                entry.Key.RemoveAt(i);
-                            }).Start();
-                            break;
+                                property.SetValue(entry.Key[i], property.GetValue(entity));
+                            }
                         }
                     }
                 }
