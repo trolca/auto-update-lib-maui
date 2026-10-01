@@ -61,8 +61,11 @@ public class EntitySourceGenerator : IIncrementalGenerator
         
         var ns = symbol.ContainingNamespace.ToDisplayString();
         var className = symbol.Name;
+        
         if (symbol == null) return;
         var primaryKeys = parameters.FindAll((s) => s.GetAttributes().Any((e) => e.AttributeClass?.Name == "PrimaryKeyAttribute"));
+        var autoIncrements = parameters.FindAll((s) => s.GetAttributes().Any((e) => e.AttributeClass?.Name == "AutoIncrementAttribute"));
+        bool isSql = primaryKeys.Count != 0;
         if (primaryKeys.Count == 0)
             primaryKeys = parameters;
         
@@ -72,7 +75,8 @@ public class EntitySourceGenerator : IIncrementalGenerator
         sb.AppendLine("//Auto generated Equals function");
         sb.AppendLine($"namespace {ns};");
         sb.AppendLine("using System.ComponentModel;");
-        sb.AppendLine("using SQLite;");
+        sb.AppendLine("using System.ComponentModel.DataAnnotations;");
+        if(isSql || autoIncrements.Count > 0) sb.AppendLine("using SQLite;");
         sb.AppendLine("using System.Runtime.CompilerServices;");
         sb.AppendLine($"public partial class {className} : INotifyPropertyChanged");
         sb.AppendLine("{");
@@ -97,11 +101,20 @@ public class EntitySourceGenerator : IIncrementalGenerator
         sb.AppendLine("){}");
         foreach (var parameter in parameters)
         {
+            
             sb.AppendLine($"    private {parameter.Type.Name} _{parameter.Name};");
-            if (parameter.GetAttributes().Any(a => a.AttributeClass?.Name == "PrimaryKeyAttribute"))
-                sb.AppendLine("    [PrimaryKey]");
-            if (parameter.GetAttributes().Any(a => a.AttributeClass?.Name == "AutoIncrementAttribute"))
-                sb.AppendLine("    [AutoIncrement]");
+
+            foreach (var attribute in parameter.GetAttributes())
+            {
+                if(attribute.AttributeClass.Name == "PrimaryKeyAttribute")
+                    sb.AppendLine("    [PrimaryKey]");
+                else if (attribute.AttributeClass.Name == "AutoIncrementAttribute")
+                    sb.AppendLine("    [AutoIncrement]");
+                else if (attribute.AttributeClass.ContainingNamespace.ToDisplayString() ==
+                         "System.ComponentModel.DataAnnotations")
+                    sb.AppendLine($"    [" + attribute + "]");
+            }
+            
             sb.AppendLine($"    public {parameter.Type.Name} {parameter.Name}");
             sb.AppendLine("    {");
             sb.AppendLine($"        get =>  _{parameter.Name};");
